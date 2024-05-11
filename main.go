@@ -29,18 +29,17 @@ var (
 		Help: "The amount of requests to an endpoint",
 	}, []string{"path", "status"},
 	)
-	search        *Search
-	twoHourTick   = time.NewTicker(2 * time.Hour)
-	twoMinuteTick = time.NewTicker(2 * time.Minute)
-	quit          = make(chan struct{})
-	requests      = 0
-	lastRequests  = 0
-	lastPrint     = time.Now()
+	search       *Search
+	twoHourTick  = time.NewTicker(2 * time.Hour)
+	quit         = make(chan struct{})
+	requests     = 0
+	lastRequests = 0
+	lastPrint    = time.Now()
 )
 
 const (
 	BaseENVname = "HOOK"
-	webhookPath = "/webhook"
+	webhookPath = "/results"
 )
 
 type ConfigType struct {
@@ -234,7 +233,6 @@ func Ticker() {
 		case <-twoHourTick.C:
 			debugLogger.Debug("periodic cleanup started.")
 			DeleteOldPrs()
-		case <-twoMinuteTick.C:
 			if requests != lastRequests {
 				count := requests - lastRequests
 				logger.Info("requests", "since-print", time.Since(lastPrint).String(), "count", count)

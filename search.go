@@ -265,7 +265,7 @@ var (
 		Query: Query{
 			Bool: &Bool{Filter: &[]interface{}{
 				&Term{Term: map[string]string{"action": "closed"}},
-				&Range{Range: map[string]RangeFilter{"timestamp": {
+				&Range{Range: map[string]RangeFilter{"pull_request.closed_at": {
 					GreaterThenEquals: &yearBack,
 					LessThenEquals:    &dayBack,
 				}}},

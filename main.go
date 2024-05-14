@@ -253,16 +253,22 @@ func DeleteOldPrs() {
 		logger.Error("error doing search", "error", err)
 		return
 	}
+	lastID := 0
 	for _, result := range res.Results {
-		logger.Info("deleting documents relating to closed PR", "document-id", result.DocumentID, "pr-id", result.ID, "full_name", result.FullName, "number", result.Number)
-		res, err := search.SearchPR(result.ID)
-		if err != nil {
-			logger.Error("error doing search", "error", err)
-			return
+		if lastID != result.ID {
+			logger.Info("deleting documents relating to closed PR", "document-id", result.DocumentID, "pr-id", result.ID, "full_name", result.FullName, "number", result.Number)
+			res, err := search.SearchPR(result.ID)
+			if err != nil {
+				logger.Error("error doing search", "error", err)
+				return
+			}
+			for _, result := range res.Results {
+				search.Delete(result.DocumentID)
+				debugLogger.Debug("document deleted", "document-id", result.DocumentID, "pr-id", result.ID)
+			}
+		} else {
+			logger.Info("Skipping Record due to duplicate id", "document-id", result.DocumentID, "pr-id", result.ID, "full_name", result.FullName, "number", result.Number)
 		}
-		for _, result := range res.Results {
-			search.Delete(result.DocumentID)
-			debugLogger.Debug("document deleted", "document-id", result.DocumentID, "pr-id", result.ID)
-		}
+		lastID = result.ID
 	}
 }

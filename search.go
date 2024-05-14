@@ -264,16 +264,16 @@ var (
 	closedOldPRsMessage = &Message{
 		Query: Query{
 			Bool: &Bool{Filter: &[]interface{}{
-				&Term{Term: map[string]string{"action": "closed"}},
+				&Term{Term: map[string]string{"pull_request.state": "closed"}},
 				&Range{Range: map[string]RangeFilter{"pull_request.closed_at": {
 					GreaterThenEquals: &yearBack,
 					LessThenEquals:    &dayBack,
 				}}},
 			}}},
 		Sort: []map[string]string{
+			{"pull_request.id": "asc"},
 			{"pull_request.head.repo.full_name": "asc"},
 			{"timestamp": "desc"},
-			{"pull_request.id": "asc"},
 		},
 		Fields: []string{
 			"number",

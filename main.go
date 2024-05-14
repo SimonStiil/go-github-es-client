@@ -74,6 +74,7 @@ func ConfigRead(configFileName string, configOutput *ConfigType) *viper.Viper {
 	configReader.SetDefault("elastic.enableMetrics", true)
 	configReader.SetDefault("elastic.enableDebugLogging", true)
 	configReader.SetDefault("elastic.index", "application-github-webhook-test")
+	configReader.SetDefault("elastic.page_size", 10)
 
 	err := configReader.ReadInConfig() // Find and read the config file
 	if err != nil {                    // Handle errors reading the config file

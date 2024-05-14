@@ -22,6 +22,7 @@ type ConfigElastic struct {
 	EnableMetrics     bool     `mapstructure:"enableMetrics"`
 	EnableDebugLogger bool     `mapstructure:"enableDebugLogging"`
 	Index             string   `mapstructure:"index"`
+	PageSize          int      `mapstructure:"page_size"`
 }
 
 func (cfg *ConfigElastic) getConfig() *elasticsearch.Config {
@@ -62,12 +63,12 @@ func printESError(message string, res *esapi.Response) {
 
 type Search struct {
 	esClient *elasticsearch.Client
-	index    string
+	Config   *ConfigElastic
 }
 
 func initSearch(config *ConfigElastic) *Search {
 	var err error
-	search := &Search{index: config.Index}
+	search := &Search{Config: config}
 	search.esClient, err = elasticsearch.NewClient(*config.getConfig())
 	if err != nil {
 		logger.Error("error staring elasticsearch client", "error", err)
@@ -128,6 +129,8 @@ type EnvelopeResponse struct {
 }
 
 type Message struct {
+	From   *int                `json:"from,omitempty"`
+	Size   *int                `json:"size,omitempty"`
 	Query  Query               `json:"query,omitempty"`
 	Sort   []map[string]string `json:"sort,omitempty"`
 	Fields []string            `json:"fields,omitempty"`
@@ -183,7 +186,7 @@ func (search *Search) search(message *Message) (*SearchResults, error) {
 	jsonMessage := string(jsonMessageBytes)
 	debugLogger.Debug(jsonMessage)
 	res, err := search.esClient.Search(
-		search.esClient.Search.WithIndex(search.index),
+		search.esClient.Search.WithIndex(search.Config.Index),
 		search.esClient.Search.WithBody(strings.NewReader(jsonMessage)),
 	)
 	if err != nil {
@@ -239,15 +242,87 @@ func flattenStringList(list []string) string {
 }
 
 var (
-	closedPRsMessage = &Message{
+	yearBack = "now-365d/d"
+	dayBack  = "now-1d/d"
+	/*
+		closedPRsMessage = &Message{
+			Size: &resultsPageSize,
+			Query: Query{
+				Match: &map[string]string{
+					"action": "closed",
+				}},
+			Sort: []map[string]string{
+				{"pull_request.head.repo.full_name": "asc"},
+				{"timestamp": "desc"},
+				{"pull_request.id": "asc"},
+			},
+			Fields: []string{
+				"number",
+				"action",
+				"pull_request.id",
+				"pull_request.state",
+				"pull_request.title",
+				"pull_request.head.repo.full_name",
+				"pull_request.user.type"},
+			Source: false,
+		}
+		allPRsMessage = &Message{
+			Size: &resultsPageSize,
+			Query: Query{
+				MatchAll: &map[string]string{},
+			},
+			Sort: []map[string]string{
+				{"pull_request.head.repo.full_name": "asc"},
+				{"pull_request.id": "desc"},
+				{"timestamp": "desc"},
+			},
+			Fields: []string{
+				"number",
+				"action",
+				"pull_request.id",
+				"pull_request.state",
+				"pull_request.title",
+				"pull_request.head.repo.full_name",
+				"pull_request.user.type"},
+			Source: false,
+		}
+		openPRsMessage = &Message{
+			Size: &resultsPageSize,
+			Query: Query{
+				Bool: &Bool{
+					MustNot: &Term{
+						Term: map[string]string{
+							"action": "closed",
+						}}},
+			},
+			Sort: []map[string]string{
+				{"pull_request.head.repo.full_name": "asc"},
+				{"timestamp": "desc"},
+				{"pull_request.id": "asc"},
+			},
+			Fields: []string{
+				"number",
+				"action",
+				"pull_request.id",
+				"pull_request.state",
+				"pull_request.title",
+				"pull_request.head.repo.full_name",
+				"pull_request.user.type"},
+			Source: false,
+		}
+	*/
+)
+
+func (search *Search) AllPRs() (*SearchResults, error) {
+	message := &Message{
+		Size: &search.Config.PageSize,
 		Query: Query{
-			Match: &map[string]string{
-				"action": "closed",
-			}},
+			MatchAll: &map[string]string{},
+		},
 		Sort: []map[string]string{
 			{"pull_request.head.repo.full_name": "asc"},
+			{"pull_request.id": "desc"},
 			{"timestamp": "desc"},
-			{"pull_request.id": "asc"},
 		},
 		Fields: []string{
 			"number",
@@ -259,9 +334,25 @@ var (
 			"pull_request.user.type"},
 		Source: false,
 	}
-	yearBack            = "now-365d/d"
-	dayBack             = "now-1d/d"
-	closedOldPRsMessage = &Message{
+	results, err := search.search(message)
+	if err != nil {
+		return results, err
+	}
+	resultsCount := search.Config.PageSize
+	for results.Total > resultsCount {
+		message.From = &resultsCount
+		resultsNext, err := search.search(message)
+		if err != nil {
+			return results, err
+		}
+		resultsCount += search.Config.PageSize
+		results.Results = append(results.Results, resultsNext.Results...)
+	}
+	return results, err
+}
+func (search *Search) ClosedOldPRs() (*SearchResults, error) {
+	message := &Message{
+		Size: &search.Config.PageSize,
 		Query: Query{
 			Bool: &Bool{Filter: &[]interface{}{
 				&Term{Term: map[string]string{"pull_request.state": "closed"}},
@@ -285,62 +376,32 @@ var (
 			"pull_request.user.type"},
 		Source: false,
 	}
-	allPRsMessage = &Message{
-		Query: Query{
-			MatchAll: &map[string]string{},
-		},
-		Sort: []map[string]string{
-			{"pull_request.head.repo.full_name": "asc"},
-			{"pull_request.id": "desc"},
-			{"timestamp": "desc"},
-		},
-		Fields: []string{
-			"number",
-			"action",
-			"pull_request.id",
-			"pull_request.state",
-			"pull_request.title",
-			"pull_request.head.repo.full_name",
-			"pull_request.user.type"},
-		Source: false,
+	results, err := search.search(message)
+	if err != nil {
+		return results, err
 	}
-	openPRsMessage = &Message{
-		Query: Query{
-			Bool: &Bool{
-				MustNot: &Term{
-					Term: map[string]string{
-						"action": "closed",
-					}}},
-		},
-		Sort: []map[string]string{
-			{"pull_request.head.repo.full_name": "asc"},
-			{"timestamp": "desc"},
-			{"pull_request.id": "asc"},
-		},
-		Fields: []string{
-			"number",
-			"action",
-			"pull_request.id",
-			"pull_request.state",
-			"pull_request.title",
-			"pull_request.head.repo.full_name",
-			"pull_request.user.type"},
-		Source: false,
+	resultsCount := search.Config.PageSize
+	for results.Total > resultsCount {
+		message.From = &resultsCount
+		resultsNext, err := search.search(message)
+		if err != nil {
+			return results, err
+		}
+		resultsCount += search.Config.PageSize
+		results.Results = append(results.Results, resultsNext.Results...)
 	}
-)
+	return results, err
+}
 
-func (search *Search) AllPRs() (*SearchResults, error) {
-	return search.search(allPRsMessage)
-}
-func (search *Search) ClosedPRs() (*SearchResults, error) {
-	return search.search(closedPRsMessage)
-}
-func (search *Search) ClosedOldPRs() (*SearchResults, error) {
-	return search.search(closedOldPRsMessage)
-}
-func (search *Search) OpenPRs() (*SearchResults, error) {
-	return search.search(openPRsMessage)
-}
+/*
+	func (search *Search) OpenPRs() (*SearchResults, error) {
+		return search.search(openPRsMessage)
+	}
+
+	func (search *Search) ClosedPRs() (*SearchResults, error) {
+		return search.search(closedPRsMessage)
+	}
+*/
 func (search *Search) SearchPR(id int) (*SearchResults, error) {
 	searchMessage := &Message{
 		Query: Query{
@@ -365,7 +426,7 @@ func (search *Search) SearchPR(id int) (*SearchResults, error) {
 
 func (search *Search) Delete(documentID string) {
 	ctx := context.Background()
-	res, err := esapi.DeleteRequest{Index: search.index, DocumentID: documentID}.Do(ctx, search.esClient)
+	res, err := esapi.DeleteRequest{Index: search.Config.Index, DocumentID: documentID}.Do(ctx, search.esClient)
 	if err != nil {
 		logger.Error("error doing delete request", "error", err)
 		return

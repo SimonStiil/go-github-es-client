@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
@@ -178,6 +179,7 @@ type Result struct {
 }
 
 func (search *Search) search(message *Message) (*SearchResults, error) {
+	startSearch := time.Now()
 	var results SearchResults
 	jsonMessageBytes, err := json.Marshal(message)
 	if err != nil {
@@ -199,7 +201,8 @@ func (search *Search) search(message *Message) (*SearchResults, error) {
 	}
 
 	var r EnvelopeResponse
-
+	debugLogger.Debug("Search Took", "time", time.Since(startSearch).String())
+	startResult := time.Now()
 	bodyText, err := io.ReadAll(res.Body)
 	if err != nil {
 		logger.Error("error reading body", "error", err)
@@ -226,6 +229,7 @@ func (search *Search) search(message *Message) (*SearchResults, error) {
 		result.UserType = flattenStringList(hit.Fields.UserType)
 		results.Results = append(results.Results, result)
 	}
+	debugLogger.Debug("Result Reformat Took", "time", time.Since(startResult).String())
 	return &results, nil
 }
 
@@ -314,6 +318,7 @@ var (
 )
 
 func (search *Search) AllPRs() (*SearchResults, error) {
+	startResult := time.Now()
 	message := &Message{
 		Size: &search.Config.PageSize,
 		Query: Query{
@@ -348,6 +353,7 @@ func (search *Search) AllPRs() (*SearchResults, error) {
 		resultsCount += search.Config.PageSize
 		results.Results = append(results.Results, resultsNext.Results...)
 	}
+	debugLogger.Debug("AllPRs Took", "time", time.Since(startResult).String())
 	return results, err
 }
 func (search *Search) ClosedOldPRs() (*SearchResults, error) {

@@ -23,6 +23,7 @@ var (
 	logger         *slog.Logger
 	debugLogger    *slog.Logger
 	configFileName string
+	testing        bool
 	config         *ConfigType
 	endpoint       = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "endpoint",
@@ -88,6 +89,13 @@ func setupLogging(Logging ConfigLogging) {
 	logLevel := strings.ToLower(Logging.Level)
 	logFormat := strings.ToLower(Logging.Format)
 	loggingLevel := new(slog.LevelVar)
+	output := os.Stdout
+	if testing {
+		loggingLevel.Set(slog.LevelDebug)
+		logger = slog.New(slog.NewTextHandler(output, &slog.HandlerOptions{Level: loggingLevel}))
+		debugLogger = slog.New(slog.NewTextHandler(output, &slog.HandlerOptions{Level: loggingLevel, AddSource: true}))
+		return
+	}
 	switch logLevel {
 	case "debug":
 		loggingLevel.Set(slog.LevelDebug)
@@ -98,8 +106,6 @@ func setupLogging(Logging ConfigLogging) {
 	default:
 		loggingLevel.Set(slog.LevelInfo)
 	}
-
-	output := os.Stdout
 	switch logFormat {
 	case "json":
 		logger = slog.New(slog.NewJSONHandler(output, &slog.HandlerOptions{Level: loggingLevel}))
@@ -114,6 +120,7 @@ func setupLogging(Logging ConfigLogging) {
 
 func main() {
 	flag.StringVar(&configFileName, "config", "config", "Use a different config file name")
+	flag.BoolVar(&testing, "test", false, "In One Time Testing mode")
 	flag.Parse()
 	config = new(ConfigType)
 	ConfigRead(configFileName, config)
@@ -123,6 +130,21 @@ func main() {
 	}
 	setupLogging(config.Logging)
 	search = initSearch(config.Elastic)
+	if testing {
+		res, err := GetPRData()
+		if err != nil {
+			logger.Error("error", "msg", err)
+			os.Exit(10)
+		} else {
+			bytestr, err := json.MarshalIndent(res, "", "  ")
+			if err != nil {
+				logger.Error("Json Marshalling error", "msg", err)
+				os.Exit(10)
+			}
+			fmt.Print(string(bytestr))
+		}
+		os.Exit(0)
+	}
 	http.HandleFunc(webhookPath, func(w http.ResponseWriter, r *http.Request) {
 		requests += 1
 		res, err := GetPRData()

@@ -36,7 +36,7 @@ require (
 	github.com/elastic/elastic-transport-go/v8 v8.6.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-playground/webhooks/v6 v6.3.0
+	github.com/go-playground/webhooks/v6 v6.4.0
 	github.com/prometheus/client_golang v1.19.1
 	github.com/spf13/viper v1.19.0
 	go.opentelemetry.io/otel v1.24.0 // indirect

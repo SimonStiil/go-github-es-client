@@ -32,6 +32,17 @@ podTemplate(yaml: '''
         - sleep
         args: 
         - 99d
+        env:
+        - name: HOST_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        volumeMounts:
+        - name: "golang-cache"
+          mountPath: "/root/.cache/"
+        - name: "golang-prgs"
+          mountPath: "/go/pkg/"
       restartPolicy: Never
       volumes:
       - name: kaniko-secret
@@ -40,6 +51,12 @@ podTemplate(yaml: '''
           items:
           - key: .dockerconfigjson
             path: config.json
+      - name: "golang-cache"
+        persistentVolumeClaim:
+          claimName: "golang-cache"
+      - name: "golang-prgs"
+        persistentVolumeClaim:
+          claimName: "golang-prgs"
 ''') {
   node(POD_LABEL) {
     TreeMap scmData
@@ -54,8 +71,9 @@ podTemplate(yaml: '''
     }
     container('golang') {
       stage('Get CA Certs') {
+        currentBuild.description = sh(returnStdout: true, script: 'echo $HOST_NAME').trim()
         sh '''
-          apk --update add ca-certificates 
+          apk --update add ca-certificates
           cp /etc/ssl/certs/ca-certificates.crt .
         '''
       }
@@ -124,6 +142,17 @@ podTemplate(yaml: '''
             }
           }
         }
+      }
+    }
+    if (env.CHANGE_ID) {
+      if (pullRequest.createdBy.equals("renovate[bot]")){
+        if (pullRequest.mergeable) {
+          stage('Approve and Merge PR') {
+            pullRequest.merge(commitTitle: pullRequest.title, commitMessage: pullRequest.body, mergeMethod: 'squash')
+          }
+        }
+      } else {
+        echo "'PR Created by \""+ pullRequest.createdBy + "\""
       }
     }
   }

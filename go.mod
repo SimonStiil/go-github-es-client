@@ -2,7 +2,7 @@ module github.com/SimonStiil/go-github-es-client
 
 go 1.22.2
 
-require github.com/elastic/go-elasticsearch/v8 v8.17.1
+require github.com/elastic/go-elasticsearch/v8 v8.18.0
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -36,7 +36,7 @@ require (
 )
 
 require (
-	github.com/elastic/elastic-transport-go/v8 v8.6.1 // indirect
+	github.com/elastic/elastic-transport-go/v8 v8.7.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-playground/webhooks/v6 v6.4.0

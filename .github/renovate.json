@@ -3,9 +3,15 @@
   "extends": [
     "config:recommended"
   ],
-  "labels": ["dependencies"],
-  "assignees": ["SimonStiil"],
-  "reviewers": ["SimonStiil"],
+  "labels": [
+    "dependencies"
+  ],
+  "assignees": [
+    "SimonStiil"
+  ],
+  "reviewers": [
+    "SimonStiil"
+  ],
   "groupName": "all dependencies",
   "groupSlug": "all",
   "lockFileMaintenance": {
@@ -15,7 +21,7 @@
     {
       "groupName": "all dependencies",
       "groupSlug": "all",
-      "matchPackagePatterns": [
+      "matchPackageNames": [
         "*"
       ]
     }
@@ -24,8 +30,12 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": ["(^|/)Jenkinsfile$"],
-      "matchStrings": ["\\simage: (?<depName>.*?):(?<currentValue>.*?)\\s"],
+      "fileMatch": [
+        "(^|/)Jenkinsfile$"
+      ],
+      "matchStrings": [
+        "\\simage: (?<depName>.*?):(?<currentValue>.*?)\\s"
+      ],
       "datasourceTemplate": "docker",
       "versioningTemplate": "docker"
     }

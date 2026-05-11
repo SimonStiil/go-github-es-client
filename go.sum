@@ -26,6 +26,8 @@ github.com/elastic/go-elasticsearch/v9 v9.3.2 h1:nvtvfN/Gsp/rzUPz/9yILwDAsYJ3s5L
 github.com/elastic/go-elasticsearch/v9 v9.3.2/go.mod h1:ubKUMJCJbX5V/gW5MIn2NQZyaEZ61ubXwJmD5UMNrM8=
 github.com/elastic/go-elasticsearch/v9 v9.3.3 h1:gTAYqBJHKgEdYlyYXZVQQwLF8GOt0VjjZhKrdnJPkZY=
 github.com/elastic/go-elasticsearch/v9 v9.3.3/go.mod h1:ubKUMJCJbX5V/gW5MIn2NQZyaEZ61ubXwJmD5UMNrM8=
+github.com/elastic/go-elasticsearch/v9 v9.4.1 h1:pEF8xlnL8D2WdVp4HRHhGNUwC5QHdgk0DZKrJY0WCNs=
+github.com/elastic/go-elasticsearch/v9 v9.4.1/go.mod h1:IKW8WkW++PW8If95XqfMffGjoFrzHCpsKmWgYk5j3fQ=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=
 github.com/frankban/quicktest v1.14.6/go.mod h1:4ptaffx2x8+WTWXmUCuVU6aPUX1/Mz7zb5vbUoiM6w0=
 github.com/fsnotify/fsnotify v1.9.0 h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S9k=

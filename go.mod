@@ -1,8 +1,8 @@
 module github.com/SimonStiil/go-github-es-client
 
-go 1.24.0
+go 1.25
 
-require github.com/elastic/go-elasticsearch/v9 v9.3.3
+require github.com/elastic/go-elasticsearch/v9 v9.4.1
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
